@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#185FA5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Jili">
+<title>Jili</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --blue: #185FA5;
+  --blue-light: #378ADD;
+  --blue-bg: #E6F1FB;
+  --green: #3B6D11;
+  --green-mid: #639922;
+  --green-bg: #EAF3DE;
+  --red: #A32D2D;
+  --red-mid: #E24B4A;
+  --red-bg: #FCEBEB;
+  --amber: #854F0B;
+  --amber-bg: #FAEEDA;
+  --bg: #F7F8FA;
+  --surface: #FFFFFF;
+  --border: #E2E6EC;
+  --border-light: #EEF1F5;
+  --text: #111827;
+  --text-2: #4B5563;
+  --text-3: #9CA3AF;
+  --radius: 10px;
+  --radius-sm: 7px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; -webkit-tap-highlight-color: transparent; }
+
+/* Layout */
+#app { display: flex; flex-direction: column; height: 100dvh; max-width: 600px; margin: 0 auto; position: relative; }
+#topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px 0; flex-shrink: 0; }
+#topbar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+#topbar h1 { font-size: 17px; font-weight: 600; flex: 1; letter-spacing: -0.3px; }
+.tabs { display: flex; gap: 0; }
+.tab { flex: 1; padding: 9px 0 10px; font-size: 13px; font-weight: 500; color: var(--text-3); background: none; border: none; cursor: pointer; border-bottom: 2.5px solid transparent; transition: color .15s, border-color .15s; font-family: var(--font); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+#content { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: calc(16px + var(--safe-bottom)); -webkit-overflow-scrolling: touch; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 8px 14px; font-size: 13px; font-weight: 500; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); cursor: pointer; font-family: var(--font); transition: background .12s, border-color .12s; white-space: nowrap; }
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--blue-light); color: #fff; border-color: var(--blue-light); }
+.btn.primary:active { background: var(--blue); }
+.btn.danger { color: var(--red); border-color: rgba(226,75,74,.3); }
+.btn.sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+.btn.icon { padding: 7px; border-radius: 8px; }
+.btn.ghost { border-color: transparent; background: transparent; }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+.card + .card { margin-top: 10px; }
+
+/* Deck grid */
+.deck-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.deck-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 12px; cursor: pointer; transition: border-color .15s; }
+.deck-card.selected { border-color: var(--blue-light); background: #F0F7FF; }
+.deck-card:active { transform: scale(.98); }
+.deck-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; line-height: 1.3; }
+.deck-meta { font-size: 12px; color: var(--text-3); }
+.deck-due { font-size: 12px; color: var(--blue); font-weight: 600; margin-top: 4px; }
+.add-deck-btn { background: var(--bg); border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 14px 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-3); font-size: 13px; font-weight: 500; transition: border-color .15s; font-family: var(--font); min-height: 80px; }
+.add-deck-btn:active { background: var(--border-light); }
+
+/* Badges */
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 100px; font-weight: 600; }
+.badge.new { background: var(--blue-bg); color: var(--blue); }
+.badge.due { background: var(--amber-bg); color: var(--amber); }
+.badge.ok { background: var(--green-bg); color: var(--green); }
+
+/* Scenario list */
+.scenario-row { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.s-title { font-size: 13px; font-weight: 500; flex: 1; }
+.s-meta { font-size: 11px; color: var(--text-3); }
+
+/* Section header */
+.section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-light); }
+.section-head-title { font-size: 13px; font-weight: 600; flex: 1; color: var(--text-2); text-transform: uppercase; letter-spacing: .5px; font-size: 11px; }
+
+/* Deck actions bar */
+.deck-actions { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+
+/* Editor modal */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; justify-content: center; z-index: 100; }
+.modal-bg.centered { align-items: center; }
+.modal { background: var(--surface); border-radius: 18px 18px 0 0; width: 100%; max-width: 600px; max-height: 92dvh; overflow-y: auto; padding: 20px 16px calc(20px + var(--safe-bottom)); }
+.modal.centered-modal { border-radius: 16px; max-height: 85dvh; margin: 16px; width: auto; }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 4px; margin: 0 auto 16px; }
+.modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+
+/* Form fields */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+input[type=text], textarea, select { width: 100%; font-size: 14px; font-family: var(--font); background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 11px; color: var(--text); outline: none; }
+input[type=text]:focus, textarea:focus, select:focus { border-color: var(--blue-light); background: var(--surface); }
+textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+/* Step cards in editor */
+.step-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; background: var(--bg); margin-bottom: 10px; }
+.step-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.step-num { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; min-width: 44px; }
+.options-list { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+.option-row { display: flex; gap: 7px; align-items: center; }
+.option-row input[type=text] { flex: 1; }
+input[type=radio] { accent-color: var(--blue-light); width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+
+/* Practice */
+.practice-area { max-width: 540px; margin: 0 auto; }
+.progress-outer { height: 4px; background: var(--border-light); border-radius: 4px; margin-bottom: 18px; }
+.progress-inner { height: 4px; background: var(--blue-light); border-radius: 4px; transition: width .35s; }
+.scenario-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; line-height: 1.3; letter-spacing: -0.3px; }
+.vignette { font-size: 14px; color: var(--text-2); line-height: 1.65; margin-bottom: 18px; background: var(--bg); border-radius: var(--radius); padding: 13px 14px; border-left: 3px solid var(--blue-light); }
+.step-label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px; }
+.step-prompt-text { font-size: 15px; font-weight: 600; line-height: 1.45; margin-bottom: 14px; }
+.mcq-options { display: flex; flex-direction: column; gap: 8px; }
+.mcq-opt { padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; text-align: left; background: var(--surface); transition: border-color .12s, background .12s; width: 100%; font-family: var(--font); line-height: 1.45; }
+.mcq-opt:active:not(:disabled) { transform: scale(.99); }
+.mcq-opt:hover:not(:disabled) { border-color: var(--blue-light); }
+.mcq-opt.correct { background: var(--green-bg); border-color: var(--green-mid); color: var(--green); }
+.mcq-opt.wrong { background: var(--red-bg); border-color: var(--red-mid); color: var(--red); }
+.mcq-opt.reveal-correct { background: var(--green-bg); border-color: var(--green-mid); color: var(--green); }
+.open-input textarea { width: 100%; }
+.feedback-box { padding: 12px 14px; border-radius: var(--radius-sm); margin-top: 13px; font-size: 13px; line-height: 1.6; }
+.feedback-box.good { background: var(--green-bg); border: 1px solid var(--green-mid); color: var(--green); }
+.feedback-box.bad { background: var(--red-bg); border: 1px solid var(--red-mid); color: var(--red); }
+.feedback-box.neutral { background: var(--bg); border: 1px solid var(--border); color: var(--text-2); }
+.rating-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.r-btn { flex: 1; min-width: 60px; padding: 10px 6px; font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); border: 1.5px solid; background: transparent; cursor: pointer; font-family: var(--font); transition: background .12s; }
+.r-btn.again { border-color: rgba(226,75,74,.4); color: var(--red); }
+.r-btn.again:active { background: var(--red-bg); }
+.r-btn.hard { border-color: rgba(186,117,23,.4); color: var(--amber); }
+.r-btn.hard:active { background: var(--amber-bg); }
+.r-btn.good { border-color: rgba(99,153,34,.4); color: var(--green); }
+.r-btn.good:active { background: var(--green-bg); }
+.r-btn.easy { border-color: rgba(55,138,221,.4); color: var(--blue); }
+.r-btn.easy:active { background: var(--blue-bg); }
+.r-label { font-size: 10px; font-weight: 400; display: block; margin-top: 2px; opacity: .7; }
+
+/* Stats */
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+.stat-val { font-size: 26px; font-weight: 700; letter-spacing: -1px; color: var(--text); }
+.stat-lbl { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.heatmap-row { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 8px; }
+.heatmap-cell { width: 14px; height: 14px; border-radius: 3px; background: var(--border-light); }
+.heatmap-cell.d1 { background: #BDD9F5; }
+.heatmap-cell.d2 { background: #7DB9EC; }
+.heatmap-cell.d3 { background: #378ADD; }
+.heatmap-cell.d4 { background: #185FA5; }
+.deck-stat-row { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
+.deck-stat-name { flex: 1; font-weight: 500; }
+.mini-bar-outer { width: 80px; height: 6px; background: var(--border-light); border-radius: 3px; overflow: hidden; }
+.mini-bar-inner { height: 6px; background: var(--blue-light); border-radius: 3px; }
+
+/* Empty state */
+.empty { text-align: center; padding: 48px 20px; color: var(--text-3); font-size: 14px; }
+.empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty h3 { color: var(--text-2); font-size: 15px; margin-bottom: 6px; }
+
+/* Row util */
+.row { display: flex; gap: 8px; align-items: center; }
+.spacer { flex: 1; }
+
+/* Toast */
+#toast { position: fixed; bottom: calc(24px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: #1a1a2e; color: #fff; padding: 10px 18px; border-radius: 100px; font-size: 13px; font-weight: 500; opacity: 0; transition: opacity .25s, transform .25s; z-index: 200; pointer-events: none; white-space: nowrap; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* No scenarios section until deck selected */
+#scenario-section { display: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div id="topbar-row">
+      <h1>🩺 Jili</h1>
+      <button class="btn sm" id="btn-export" onclick="exportDecks()" style="display:none">↑ Export</button>
+      <label class="btn sm" style="cursor:pointer">↓ Import<input type="file" accept=".json" onchange="importDecks(event)" style="display:none"></label>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tab-decks" onclick="showView('decks')">Decks</button>
+      <button class="tab" id="tab-practice" onclick="showView('practice')">Practice</button>
+      <button class="tab" id="tab-stats" onclick="showView('stats')">Stats</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <!-- DECKS VIEW -->
+    <div id="view-decks">
+      <div class="deck-grid" id="deck-grid"></div>
+      <div id="scenario-section">
+        <div class="section-head">
+          <span class="section-head-title" id="scenario-section-title"></span>
+          <button class="btn sm danger" id="btn-delete-deck" onclick="deleteDeck()">Delete deck</button>
+        </div>
+        <div class="deck-actions">
+          <button class="btn sm primary" onclick="startPractice(state.selectedDeck)">▶ Practice due</button>
+          <button class="btn sm" onclick="showAddScenario()">+ Add scenario</button>
+        </div>
+        <div id="scenario-list"></div>
+      </div>
+    </div>
+
+    <!-- PRACTICE VIEW -->
+    <div id="view-practice" style="display:none">
+      <div id="practice-empty" class="empty">
+        <div class="empty-icon">✅</div>
+        <h3>Nothing due right now</h3>
+        <p>Add scenarios or come back later.</p>
+      </div>
+      <div id="practice-inner" style="display:none"></div>
+    </div>
+
+    <!-- STATS VIEW -->
+    <div id="view-stats" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ADD DECK MODAL -->
+<div class="modal-bg centered" id="modal-deck" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal centered-modal" style="width:min(400px,calc(100vw - 32px))">
+    <h3>New deck</h3>
+    <div class="field"><label>Name</label><input type="text" id="new-deck-name" placeholder="e.g. Paediatric emergencies"></div>
+    <div class="field"><label>Description (optional)</label><input type="text" id="new-deck-desc" placeholder="e.g. Common acute presentations"></div>
+    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:4px">
+      <button class="btn" onclick="document.getElementById('modal-deck').style.display='none'">Cancel</button>
+      <button class="btn primary" onclick="addDeck()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCENARIO EDITOR MODAL -->
+<div class="modal-bg" id="modal-scenario" style="display:none" onclick="if(event.target===this)closeScenarioModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="row" style="margin-bottom:16px">
+      <h3 id="modal-scenario-title" style="margin:0">New scenario</h3>
+      <div class="spacer"></div>
+      <button class="btn sm danger" id="btn-delete-scenario" onclick="deleteScenario()" style="display:none">Delete</button>
+    </div>
+    <div class="field"><label>Title</label><input type="text" id="sc-title" placeholder="e.g. Child with elbow pain"></div>
+    <div class="field"><label>Opening vignette</label><textarea id="sc-vignette" rows="3" placeholder="A 7-year-old presents to ED..."></textarea></div>
+    <div class="row" style="margin-bottom:10px">
+      <span style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px">Steps</span>
+      <div class="spacer"></div>
+      <button class="btn sm" onclick="addStep()">+ Add step</button>
+    </div>
+    <div id="steps-editor"></div>
+    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:14px">
+      <button class="btn" onclick="closeScenarioModal()">Cancel</button>
+      <button class="btn primary" onclick="saveScenario()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let state = {
+  decks: [],
+  selectedDeck: null,
+  editingScenario: null,
+  editingSteps: [],
+  practice: { queue: [], idx: 0, stepIdx: 0, correct: false }
+};
+
+// ── Persistence ──────────────────────────────────────────────
+function save() {
+  try { localStorage.setItem('jili_v1', JSON.stringify({ decks: state.decks, history: state.history })); } catch(e) {}
+}
+function load() {
+  try {
+    const d = localStorage.getItem('jili_v1') || localStorage.getItem('jili');
+    if (d) {
+      const parsed = JSON.parse(d);
+      // support old format (just array) and new format (object)
+      state.decks = Array.isArray(parsed) ? parsed : (parsed.decks || []);
+      state.history = (!Array.isArray(parsed) && parsed.history) ? parsed.history : [];
+    }
+  } catch(e) {}
+  if (!state.decks.length) seedDemo();
+  if (!state.history) state.history = [];
+}
+
+// ── Demo data ────────────────────────────────────────────────
+function seedDemo() {
+  state.decks = [{
+    id: 'd1', name: 'Paediatric orthopaedics', desc: 'Common presentations', scenarios: [
+      { id: 's1', title: 'Child with elbow pain', vignette: 'A 7-year-old boy presents to ED after falling from monkey bars. He holds his left arm at 90° and refuses to move it. No obvious deformity on inspection.', steps: [
+        { id: 'st1', prompt: 'What is your first priority?', type: 'mcq', options: ['Request X-ray immediately','Take focused history and examine','Give analgesia and observe','Refer to orthopaedics'], correct: 1, feedback: 'History and examination first — establish mechanism, tenderness location, and neurovascular status before imaging.' },
+        { id: 'st2', prompt: 'Point tenderness over lateral condyle, intact radial pulse, normal capillary refill. Most likely fracture pattern?', type: 'mcq', options: ['Supracondylar fracture','Lateral condyle fracture','Radial head subluxation','Medial epicondyle avulsion'], correct: 0, feedback: 'Supracondylar fracture is most common in 5–8 year olds after a fall onto an outstretched hand.' },
+        { id: 'st3', prompt: 'What neurovascular check is most important before and after reduction?', type: 'open', feedback: 'AIN function — ask patient to make OK sign. Also check radial pulse, median nerve (thumb opposition), and radial nerve (wrist extension).' }
+      ], srs: { interval: 0, ef: 2.5, due: Date.now(), reps: 0 } }
+    ]
+  }];
+  state.history = [];
+  save();
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function uid() { return Math.random().toString(36).slice(2,10); }
+function getDueCount(deck) { const now = Date.now(); return deck.scenarios.filter(s => s.srs.due <= now).length; }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Views ────────────────────────────────────────────────────
+function showView(v) {
+  ['decks','practice','stats'].forEach(x => {
+    document.getElementById('view-'+x).style.display = x===v ? '' : 'none';
+    document.getElementById('tab-'+x).classList.toggle('active', x===v);
+  });
+  document.getElementById('btn-export').style.display = v==='decks' ? '' : 'none';
+  if (v === 'stats') renderStats();
+  if (v === 'practice') {
+    const now = Date.now();
+    const hasDue = state.decks.some(d => d.scenarios.some(s => s.srs.due <= now));
+    document.getElementById('practice-empty').style.display = hasDue ? 'none' : '';
+    document.getElementById('practice-inner').style.display = hasDue ? '' : 'none';
+    if (!hasDue) document.getElementById('practice-inner').innerHTML = '';
+  }
+}
+
+// ── Decks ────────────────────────────────────────────────────
+function renderDecks() {
+  const grid = document.getElementById('deck-grid');
+  grid.innerHTML = '';
+  state.decks.forEach(d => {
+    const due = getDueCount(d);
+    const div = document.createElement('div');
+    div.className = 'deck-card' + (state.selectedDeck === d.id ? ' selected' : '');
+    div.innerHTML = `<div class="deck-name">${esc(d.name)}</div><div class="deck-meta">${esc(d.desc||'')}</div><div class="deck-meta">${d.scenarios.length} scenario${d.scenarios.length!==1?'s':''}</div>${due?`<div class="deck-due">${due} due</div>`:''}`;
+    div.onclick = () => selectDeck(d.id);
+    grid.appendChild(div);
+  });
+  const add = document.createElement('button');
+  add.className = 'add-deck-btn';
+  add.innerHTML = '＋ New deck';
+  add.onclick = () => { document.getElementById('new-deck-name').value=''; document.getElementById('new-deck-desc').value=''; document.getElementById('modal-deck').style.display='flex'; };
+  grid.appendChild(add);
+}
+
+function selectDeck(id) {
+  state.selectedDeck = id;
+  const deck = state.decks.find(d=>d.id===id);
+  document.getElementById('scenario-section').style.display = '';
+  document.getElementById('scenario-section-title').textContent = deck.name;
+  renderDecks();
+  renderScenarios();
+}
+
+function addDeck() {
+  const name = document.getElementById('new-deck-name').value.trim();
+  if (!name) return;
+  state.decks.push({ id: uid(), name, desc: document.getElementById('new-deck-desc').value.trim(), scenarios: [] });
+  save(); document.getElementById('modal-deck').style.display='none'; renderDecks();
+}
+
+function deleteDeck() {
+  if (!confirm(`Delete deck "${state.decks.find(d=>d.id===state.selectedDeck)?.name}"? This cannot be undone.`)) return;
+  state.decks = state.decks.filter(d=>d.id!==state.selectedDeck);
+  state.selectedDeck = null;
+  document.getElementById('scenario-section').style.display = 'none';
+  save(); renderDecks();
+}
+
+// ── Scenarios ────────────────────────────────────────────────
+function renderScenarios() {
+  const deck = state.decks.find(d=>d.id===state.selectedDeck);
+  if (!deck) return;
+  const list = document.getElementById('scenario-list');
+  list.innerHTML = '';
+  if (!deck.scenarios.length) {
+    list.innerHTML = '<div class="empty" style="padding:24px"><p>No scenarios yet.</p></div>';
+    return;
+  }
+  const now = Date.now();
+  deck.scenarios.forEach(s => {
+    const isNew = s.srs.reps === 0;
+    const due = s.srs.due <= now;
+    const row = document.createElement('div');
+    row.className = 'scenario-row';
+    const badge = isNew ? '<span class="badge new">new</span>' : due ? '<span class="badge due">due</span>' : '<span class="badge ok">reviewed</span>';
+    row.innerHTML = `<div style="flex:1"><div class="s-title">${esc(s.title)}</div><div class="s-meta">${s.steps.length} step${s.steps.length!==1?'s':''}</div></div>${badge}<button class="btn sm ghost" onclick="openScenarioEditor('${s.id}')">Edit</button>`;
+    list.appendChild(row);
+  });
+}
+
+function showAddScenario() { openScenarioEditor(null); }
+
+function openScenarioEditor(scenarioId) {
+  state.editingScenario = scenarioId;
+  const deck = state.decks.find(d=>d.id===state.selectedDeck);
+  const sc = scenarioId ? deck.scenarios.find(s=>s.id===scenarioId) : null;
+  document.getElementById('modal-scenario-title').textContent = sc ? 'Edit scenario' : 'New scenario';
+  document.getElementById('sc-title').value = sc ? sc.title : '';
+  document.getElementById('sc-vignette').value = sc ? sc.vignette : '';
+  document.getElementById('btn-delete-scenario').style.display = sc ? '' : 'none';
+  state.editingSteps = sc ? JSON.parse(JSON.stringify(sc.steps)) : [];
+  renderStepsEditor();
+  document.getElementById('modal-scenario').style.display = 'flex';
+}
+
+function closeScenarioModal() { document.getElementById('modal-scenario').style.display='none'; }
+
+function renderStepsEditor() {
+  const container = document.getElementById('steps-editor');
+  container.innerHTML = '';
+  state.editingSteps.forEach((step, i) => {
+    const div = document.createElement('div');
+    div.className = 'step-card';
+    div.innerHTML = `
+      <div class="step-head">
+        <span class="step-num">Step ${i+1}</span>
+        <select style="flex:1;font-size:13px" onchange="changeStepType('${step.id}',this.value)">
+          <option value="mcq" ${step.type==='mcq'?'selected':''}>Multiple choice</option>
+          <option value="open" ${step.type==='open'?'selected':''}>Open-ended</option>
+        </select>
+        ${i>0?`<button class="btn sm" onclick="moveStep('${step.id}',-1)" aria-label="Move up">↑</button>`:''}
+        ${i<state.editingSteps.length-1?`<button class="btn sm" onclick="moveStep('${step.id}',1)" aria-label="Move down">↓</button>`:''}
+        <button class="btn sm danger" onclick="removeStep('${step.id}')">✕</button>
+      </div>
+      <div class="field"><label>Prompt</label><textarea rows="2" placeholder="What would you do next?" oninput="updateStep('${step.id}','prompt',this.value)">${esc(step.prompt)}</textarea></div>
+      ${step.type==='mcq' ? renderMcqEditor(step) : ''}
+      <div class="field"><label>Feedback / explanation</label><textarea rows="2" placeholder="Explanation shown after answering..." oninput="updateStep('${step.id}','feedback',this.value)">${esc(step.feedback||'')}</textarea></div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function renderMcqEditor(step) {
+  let html = '<div class="field"><label>Options <span style="font-size:11px;font-weight:400;color:var(--text-3)">(● = correct)</span></label><div class="options-list">';
+  (step.options||[]).forEach((opt, i) => {
+    html += `<div class="option-row">
+      <input type="radio" name="correct-${step.id}" value="${i}" ${step.correct===i?'checked':''} onchange="updateStep('${step.id}','correct',${i})" aria-label="Mark as correct">
+      <input type="text" value="${esc(opt)}" placeholder="Option ${i+1}" oninput="updateOptionText('${step.id}',${i},this.value)">
+      <button class="btn sm danger" onclick="removeOption('${step.id}',${i})">✕</button>
+    </div>`;
+  });
+  html += `</div><button class="btn sm" onclick="addOption('${step.id}')" style="margin-top:8px">+ Add option</button></div>`;
+  return html;
+}
+
+function addStep() { state.editingSteps.push({ id: uid(), prompt:'', type:'mcq', options:['',''], correct:0, feedback:'' }); renderStepsEditor(); }
+function removeStep(id) { state.editingSteps = state.editingSteps.filter(s=>s.id!==id); renderStepsEditor(); }
+function moveStep(id, dir) {
+  const i = state.editingSteps.findIndex(s=>s.id===id);
+  const ni = i+dir;
+  if (ni<0||ni>=state.editingSteps.length) return;
+  [state.editingSteps[i],state.editingSteps[ni]] = [state.editingSteps[ni],state.editingSteps[i]];
+  renderStepsEditor();
+}
+function changeStepType(id, type) {
+  const s = state.editingSteps.find(s=>s.id===id);
+  s.type = type;
+  if (type==='mcq' && !s.options) s.options = ['',''];
+  if (type==='mcq' && s.correct===undefined) s.correct = 0;
+  renderStepsEditor();
+}
+function updateStep(id, key, val) { const s=state.editingSteps.find(s=>s.id===id); if(s) s[key]=key==='correct'?parseInt(val):val; }
+function updateOptionText(id, i, val) { const s=state.editingSteps.find(s=>s.id===id); if(s&&s.options) s.options[i]=val; }
+function addOption(id) { const s=state.editingSteps.find(s=>s.id===id); if(s){ s.options.push(''); renderStepsEditor(); } }
+function removeOption(id, i) {
+  const s=state.editingSteps.find(s=>s.id===id); if(!s) return;
+  s.options.splice(i,1);
+  if(s.correct>=s.options.length) s.correct=Math.max(0,s.options.length-1);
+  renderStepsEditor();
+}
+function saveScenario() {
+  const title = document.getElementById('sc-title').value.trim();
+  const vignette = document.getElementById('sc-vignette').value.trim();
+  if (!title) { toast('Please enter a title.'); return; }
+  const deck = state.decks.find(d=>d.id===state.selectedDeck);
+  if (state.editingScenario) {
+    const sc = deck.scenarios.find(s=>s.id===state.editingScenario);
+    sc.title=title; sc.vignette=vignette; sc.steps=state.editingSteps;
+  } else {
+    deck.scenarios.push({ id: uid(), title, vignette, steps: state.editingSteps, srs: { interval:0, ef:2.5, due:Date.now(), reps:0 } });
+  }
+  save(); closeScenarioModal(); renderScenarios(); renderDecks(); toast('Saved ✓');
+}
+function deleteScenario() {
+  if (!confirm('Delete this scenario?')) return;
+  const deck = state.decks.find(d=>d.id===state.selectedDeck);
+  deck.scenarios = deck.scenarios.filter(s=>s.id!==state.editingScenario);
+  save(); closeScenarioModal(); renderScenarios(); renderDecks();
+}
+
+// ── SRS (SM-2) ───────────────────────────────────────────────
+function applyRating(sc, rating) {
+  let {interval, ef, reps} = sc.srs;
+  const q5 = {0:1, 1:2, 2:4, 3:5}[rating];
+  if (q5 >= 3) {
+    if (reps===0) interval=1;
+    else if (reps===1) interval=6;
+    else interval=Math.round(interval * ef);
+    reps++;
+  } else { reps=0; interval=1; }
+  ef = Math.max(1.3, ef + (0.1-(5-q5)*(0.08+(5-q5)*0.02)));
+  sc.srs = { interval, ef, reps, due: Date.now() + interval*24*60*60*1000 };
+  // Record history
+  if (!state.history) state.history = [];
+  state.history.push({ date: new Date().toISOString().slice(0,10), scenarioId: sc.id, rating, interval });
+}
+
+// ── Practice ─────────────────────────────────────────────────
+function startPractice(deckId) {
+  const now = Date.now();
+  let queue = [];
+  const decks = deckId ? [state.decks.find(d=>d.id===deckId)] : state.decks;
+  decks.filter(Boolean).forEach(deck => {
+    deck.scenarios.filter(s=>s.srs.due<=now).forEach(s => queue.push({ deckId: deck.id, scenarioId: s.id }));
+  });
+  if (!queue.length) { toast('No scenarios due right now!'); return; }
+  state.practice = { queue, idx:0, stepIdx:0, correct:false };
+  showView('practice');
+  document.getElementById('practice-empty').style.display='none';
+  document.getElementById('practice-inner').style.display='';
+  renderPractice();
+}
+
+function renderPractice() {
+  const { queue, idx, stepIdx } = state.practice;
+  const inner = document.getElementById('practice-inner');
+  if (idx >= queue.length) {
+    document.getElementById('practice-empty').innerHTML = '<div class="empty-icon">🎉</div><h3>Session complete!</h3><p>All due scenarios reviewed.</p>';
+    document.getElementById('practice-empty').style.display = '';
+    inner.style.display = 'none';
+    inner.innerHTML = '';
+    return;
+  }
+  const { deckId, scenarioId } = queue[idx];
+  const deck = state.decks.find(d=>d.id===deckId);
+  const sc = deck.scenarios.find(s=>s.id===scenarioId);
+  const step = sc.steps[stepIdx];
+  const prog = Math.round(((idx + stepIdx/Math.max(1,sc.steps.length)) / queue.length) * 100);
+  const isLast = stepIdx === sc.steps.length - 1;
+
+  let html = `<div class="practice-area">
+    <div class="progress-outer"><div class="progress-inner" style="width:${prog}%"></div></div>
+    <div class="vignette">${esc(sc.vignette)}</div>
+    <div class="step-label">Step ${stepIdx+1} of ${sc.steps.length}</div>
+    <div class="step-prompt-text">${esc(step.prompt)}</div>`;
+
+  if (step.type === 'mcq') {
+    html += `<div class="mcq-options" id="mcq-opts">`;
+    (step.options||[]).forEach((opt, i) => {
+      html += `<button class="mcq-opt" onclick="answerMCQ(${i})" id="opt-${i}">${esc(opt)}</button>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="open-input"><textarea id="open-ans" rows="3" placeholder="Type your answer…"></textarea></div>
+    <button class="btn primary" style="margin-top:10px" onclick="answerOpen()">Submit</button>`;
+  }
+
+  html += `<div id="feedback-area"></div>`;
+
+  if (isLast) {
+    html += `<div id="rating-area" style="display:none;margin-top:16px">
+      <p style="font-size:12px;color:var(--text-3);margin-bottom:8px">How well did you know this scenario?</p>
+      <div class="rating-row">
+        <button class="r-btn again" onclick="rate(0)">Again<span class="r-label">&lt;1d</span></button>
+        <button class="r-btn hard" onclick="rate(1)">Hard<span class="r-label">~1d</span></button>
+        <button class="r-btn good" onclick="rate(2)">Good<span class="r-label">~6d</span></button>
+        <button class="r-btn easy" onclick="rate(3)">Easy<span class="r-label">longer</span></button>
+      </div></div>`;
+  } else {
+    html += `<div id="next-btn-area" style="display:none;margin-top:14px"><button class="btn primary" onclick="nextStep()">Next step →</button></div>`;
+  }
+
+  html += `</div>`;
+  inner.innerHTML = html;
+}
+
+function answerMCQ(chosen) {
+  const { queue, idx, stepIdx } = state.practice;
+  const sc = state.decks.find(d=>d.id===queue[idx].deckId).scenarios.find(s=>s.id===queue[idx].scenarioId);
+  const step = sc.steps[stepIdx];
+  const correct = step.correct === chosen;
+  state.practice.correct = correct;
+  document.querySelectorAll('.mcq-opt').forEach((btn, i) => {
+    btn.disabled = true;
+    if (i===chosen) btn.className = 'mcq-opt ' + (correct?'correct':'wrong');
+    if (!correct && i===step.correct) btn.className = 'mcq-opt reveal-correct';
+  });
+  showFeedback(step.feedback, correct);
+  showContinue(stepIdx, sc.steps.length);
+}
+
+function answerOpen() {
+  const { queue, idx, stepIdx } = state.practice;
+  const sc = state.decks.find(d=>d.id===queue[idx].deckId).scenarios.find(s=>s.id===queue[idx].scenarioId);
+  const step = sc.steps[stepIdx];
+  const el = document.getElementById('open-ans');
+  if (el) el.disabled = true;
+  document.querySelector('.open-input + .btn')?.setAttribute('disabled','true');
+  showFeedback(step.feedback, null);
+  showContinue(stepIdx, sc.steps.length);
+}
+
+function showFeedback(text, correct) {
+  const el = document.getElementById('feedback-area');
+  if (!text && correct===null) { showContinue(); return; }
+  const cls = correct===null ? 'neutral' : correct ? 'good' : 'bad';
+  const prefix = correct===null ? '<strong>Model answer:</strong> ' : correct ? '<strong>Correct.</strong> ' : '<strong>Incorrect.</strong> ';
+  el.innerHTML = `<div class="feedback-box ${cls}">${prefix}${esc(text||'')}</div>`;
+}
+
+function showContinue(stepIdx, total) {
+  if (stepIdx === total - 1) {
+    const ra = document.getElementById('rating-area');
+    if (ra) ra.style.display = '';
+  } else {
+    const na = document.getElementById('next-btn-area');
+    if (na) na.style.display = '';
+  }
+}
+
+function nextStep() { state.practice.stepIdx++; renderPractice(); }
+
+function rate(r) {
+  const { queue, idx } = state.practice;
+  const sc = state.decks.find(d=>d.id===queue[idx].deckId).scenarios.find(s=>s.id===queue[idx].scenarioId);
+  applyRating(sc, r);
+  save();
+  state.practice.idx++;
+  state.practice.stepIdx = 0;
+  renderPractice();
+}
+
+// ── Stats ────────────────────────────────────────────────────
+function renderStats() {
+  const now = Date.now();
+  let total=0, reviewed=0, due=0, totalReps=0;
+  state.decks.forEach(d => d.scenarios.forEach(s => {
+    total++; totalReps += s.srs.reps;
+    if (s.srs.reps>0) reviewed++;
+    if (s.srs.due<=now) due++;
+  }));
+
+  // Heatmap: last 70 days
+  const hist = state.history || [];
+  const dayCounts = {};
+  hist.forEach(h => { dayCounts[h.date] = (dayCounts[h.date]||0) + 1; });
+  const maxDay = Math.max(1, ...Object.values(dayCounts));
+  let heatmapHtml = '<div class="heatmap-row">';
+  for (let i=69; i>=0; i--) {
+    const d = new Date(Date.now() - i*86400000);
+    const key = d.toISOString().slice(0,10);
+    const count = dayCounts[key] || 0;
+    const level = count===0 ? '' : count < maxDay*.25 ? 'd1' : count < maxDay*.5 ? 'd2' : count < maxDay*.75 ? 'd3' : 'd4';
+    heatmapHtml += `<div class="heatmap-cell ${level}" title="${key}: ${count} reviews"></div>`;
+  }
+  heatmapHtml += '</div>';
+
+  // Per-deck breakdown
+  let deckRows = state.decks.map(d => {
+    const r = d.scenarios.filter(s=>s.srs.reps>0).length;
+    const pct = d.scenarios.length ? Math.round(r/d.scenarios.length*100) : 0;
+    const dDue = getDueCount(d);
+    return `<div class="deck-stat-row">
+      <span class="deck-stat-name">${esc(d.name)}</span>
+      <span style="font-size:12px;color:var(--text-3);min-width:60px;text-align:right">${r}/${d.scenarios.length}</span>
+      <div class="mini-bar-outer"><div class="mini-bar-inner" style="width:${pct}%"></div></div>
+      ${dDue ? `<span class="badge due" style="margin-left:4px">${dDue} due</span>` : ''}
+    </div>`;
+  }).join('');
+
+  // Streak
+  let streak = 0;
+  for (let i=0; ; i++) {
+    const d = new Date(Date.now() - i*86400000).toISOString().slice(0,10);
+    if (dayCounts[d]) streak++;
+    else if (i > 0) break;
+    if (i > 365) break;
+  }
+
+  document.getElementById('view-stats').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-lbl">Total scenarios</div></div>
+      <div class="stat-card"><div class="stat-val">${due}</div><div class="stat-lbl">Due now</div></div>
+      <div class="stat-card"><div class="stat-val">${hist.length}</div><div class="stat-lbl">Total reviews</div></div>
+      <div class="stat-card"><div class="stat-val">${streak}</div><div class="stat-lbl">Day streak 🔥</div></div>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Activity — last 70 days</div>
+      ${heatmapHtml}
+      <div style="font-size:11px;color:var(--text-3);margin-top:6px">Each cell = one day. Darker = more reviews.</div>
+    </div>
+    <div class="card">
+      <div style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Per-deck progress</div>
+      ${deckRows || '<p style="font-size:13px;color:var(--text-3);padding:8px 0">No decks yet.</p>'}
+    </div>`;
+}
+
+// ── Import / Export ──────────────────────────────────────────
+function exportDecks() {
+  const data = JSON.stringify({ decks: state.decks, history: state.history||[], exportedAt: new Date().toISOString() }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'jili-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Exported ✓');
+}
+
+function importDecks(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const incoming = Array.isArray(parsed) ? parsed : (parsed.decks || []);
+      const incomingHistory = (!Array.isArray(parsed) && parsed.history) ? parsed.history : [];
+      if (!Array.isArray(incoming)) throw new Error('Invalid format');
+      // Merge: add decks not already present by id
+      let added = 0;
+      incoming.forEach(d => {
+        if (!state.decks.find(x=>x.id===d.id)) { state.decks.push(d); added++; }
+      });
+      // Merge history (deduplicate by date+scenarioId)
+      const existingKeys = new Set((state.history||[]).map(h=>h.date+'_'+h.scenarioId+'_'+h.rating));
+      incomingHistory.forEach(h => {
+        const k = h.date+'_'+h.scenarioId+'_'+h.rating;
+        if (!existingKeys.has(k)) { state.history.push(h); existingKeys.add(k); }
+      });
+      save(); renderDecks();
+      toast(`Imported ${added} new deck${added!==1?'s':''} ✓`);
+    } catch(err) { toast('Import failed — invalid file'); }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ── Init ─────────────────────────────────────────────────────
+load();
+renderDecks();
+
+// Service worker registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+}
+</script>
+</body>
+</html>
